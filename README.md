@@ -7,7 +7,7 @@
 /logged_in
 /logout
 
-After /logged_in we Shall return a search bar for paper searching.
+After /logged_in we shall return a search bar for paper searching.
 
 /search/"key_word"&"paper_number"
 /search/"key_word"&"paper_number"/by_date
