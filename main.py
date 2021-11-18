@@ -1,5 +1,5 @@
-from flask import Flask, jsonify,render_template, request, url_for, redirect, session
-from query_module import query_from_API,reorder_bydate,reorder_bycitations
+from flask import Flask, jsonify, render_template, request, url_for, redirect, session
+from query_module import query_from_API, reorder_bydate, reorder_bycitations
 import random
 import pymongo
 import bcrypt
@@ -8,9 +8,12 @@ app = Flask(__name__)
 
 client = pymongo.MongoClient("mongodb+srv://coen6313:irank@coen6313irank.xbzvo.mongodb.net/"
                              "myFirstDatabase?retryWrites=true&w=majority")
-db = client.get_database('total_records')
-records = db.register
+db = client.get_database('paper_search')
+userinfo = db.userinfo
+paper_db = db.paper_db
 app.secret_key = "testing_coen6313"
+
+
 # @app.route('/')
 # def hello_world():
 #     return 'hello, welcome to iRanking system of COEN 6313'
@@ -30,9 +33,9 @@ def index():
         password1 = request.form.get("password1")
         password2 = request.form.get("password2")
         # if found in database showcase that it's found
-        userid_found = records.find_one({"userid": userid})
-        user_found = records.find_one({"name": user})
-        email_found = records.find_one({"email": email})
+        userid_found = userinfo.find_one({"userid": userid})
+        user_found = userinfo.find_one({"name": user})
+        email_found = userinfo.find_one({"email": email})
         if user_found:
             message = 'There already is a user by that name'
             return render_template('index.html', message=message)
@@ -49,12 +52,12 @@ def index():
             # hash the password and encode it
             hashed = bcrypt.hashpw(password2.encode('utf-8'), bcrypt.gensalt())
             # assing them in a dictionary in key value pairs
-            user_input = {'name': user, 'email': email, 'user_id': userid ,'password': hashed}
+            user_input = {'name': user, 'email': email, 'user_id': userid, 'password': hashed}
             # insert it in the record collection
-            records.insert_one(user_input)
+            userinfo.insert_one(user_input)
 
             # find the new created account and its email
-            user_data = records.find_one({"email": email})
+            user_data = userinfo.find_one({"email": email})
             new_email = user_data['email']
             # if registered redirect to logged in as the registered user
             return render_template('logged_in.html', email=new_email)
@@ -72,7 +75,7 @@ def login():
         password = request.form.get("password")
 
         # check if email exists in database
-        email_found = records.find_one({"email": email})
+        email_found = userinfo.find_one({"email": email})
         if email_found:
             email_val = email_found['email']
             passwordcheck = email_found['password']
@@ -109,7 +112,6 @@ def logout():
         return render_template('index.html')
 
 
-
 @app.route('/search/<string:keyword>&<string:number>', methods=['GET', 'POST'])
 def query_result_req(keyword, number):
     """
@@ -120,8 +122,10 @@ def query_result_req(keyword, number):
     '''when debug = True, will not call s2search module, which includes the whole machine learning predict model and 
     complex env requirements, only feed an example of paper dict that for debug web funtion.'''
     paper_list = query_from_API(keyword, number)
+
     # paper_list = random.shuffle(paper_list)
     return jsonify(paper_list)
+
 
 @app.route('/search/<string:keyword>&<string:number>/by_date', methods=['GET', 'POST'])
 def query_result_req_bydate(keyword, number):
@@ -137,6 +141,7 @@ def query_result_req_bydate(keyword, number):
 
     return jsonify(paper_list)
 
+
 @app.route('/search/<string:keyword>&<string:number>/by_citations', methods=['GET', 'POST'])
 def query_result_req_bycitations(keyword, number):
     """
@@ -150,6 +155,13 @@ def query_result_req_bycitations(keyword, number):
     paper_list = reorder_bycitations(paper_list)
 
     return jsonify(paper_list)
+
+
+@app.route('/search/mangodb')
+def show_mangodb():
+    print(userinfo)
+    return 'print_mangodb'
+
 
 if __name__ == '__main__':
     app.run(debug=True)

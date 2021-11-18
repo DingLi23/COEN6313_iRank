@@ -2,7 +2,7 @@ import pymongo
 
 client = pymongo.MongoClient("mongodb+srv://coen6313:irank@coen6313irank.xbzvo.mongodb.net/"
                              "myFirstDatabase?retryWrites=true&w=majority")
-db = client.test
+# db = client.test
 
 class User_Info:
     def __init__(self):
