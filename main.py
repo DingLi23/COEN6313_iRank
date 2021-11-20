@@ -3,6 +3,7 @@ from query_module import query_from_API, reorder_bydate, reorder_bycitations
 import random
 import pymongo
 import bcrypt
+from database_user import PaperSearchForm
 
 app = Flask(__name__)
 
@@ -23,9 +24,8 @@ app.secret_key = "testing_coen6313"
 @app.route("/", methods=['post', 'get'])
 def index():
     message = ''
-    # if method post in index
-    if "email" in session:
-        return redirect(url_for("logged_in"))
+    # if "email" in session:
+    #     return redirect(url_for("logged_in"))
     if request.method == "POST":
         user = request.form.get("fullname")
         email = request.form.get("email")
@@ -97,8 +97,7 @@ def login():
 @app.route('/logged_in')
 def logged_in():
     if "email" in session:
-        email = session["email"]
-        return render_template('logged_in.html', email=email)
+        return redirect(url_for("search_welcome"))
     else:
         return redirect(url_for("login"))
 
@@ -110,6 +109,42 @@ def logout():
         return render_template("signout.html")
     else:
         return render_template('index.html')
+
+
+@app.route('/search', methods=['GET', 'POST'])
+def search_welcome():
+    if "email" in session:
+        email = session["email"]
+        search = PaperSearchForm(request.form)
+        if request.method == 'POST':
+            return search_results(search)
+        return render_template('logged_in.html', form=search, email=email)
+
+
+@app.route('/search/results', methods=['GET', 'POST'])
+def search_results(search):
+    results = []
+    search_string = search.data['search']
+    search_number = search.data['number']
+    if search_string == '':
+        return redirect(url_for("search_welcome"))
+    if search_number == '':
+        search_number = 10
+    search_number = int(search_number)
+    if search.data['select'] == 'NormalSearch':
+        # search_string = search_string.split('&')
+        return redirect(url_for("query_result_req", keyword=search_string, number=search_number))
+    elif search.data['select'] == 'by_Date':
+        search_number = int(search_number)
+        return redirect(url_for("query_result_req_bydate", keyword=search_string, number=search_number))
+    elif search.data['select'] == 'by_Citations':
+        return redirect(url_for("query_result_req_bycitations", keyword=search_string, number=search_number))
+    elif search.data['select'] == 'by_Trend':
+        return
+        # return redirect(url_for("query_result_req_bycitations", keyword=search_string, number=search_number))
+    elif search.data['select'] == 'by_s2Model':
+        return
+        # return redirect(url_for("query_result_req_bycitations", keyword=search_string, number=search_number))
 
 
 @app.route('/search/<string:keyword>&<string:number>', methods=['GET', 'POST'])
@@ -157,10 +192,13 @@ def query_result_req_bycitations(keyword, number):
     return jsonify(paper_list)
 
 
-@app.route('/search/mangodb')
-def show_mangodb():
-    print(userinfo)
-    return 'print_mangodb'
+# @app.route('/view/paper_history')
+# def show_mangodb():
+#     # return render_template('papermeta.html', paper_db=paper_db)
+#     cur = paper_db.archive.find({}, {'paper_id': 1, 'title': 1, 'author': 1, 'abstract': 1, 'venue': 1, 'year': 1,
+#                                      'citations': 1, 'url': 1})
+#     print(list(cur))
+#     return render_template('papermeta.html', cur=list(cur))
 
 
 if __name__ == '__main__':
