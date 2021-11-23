@@ -37,3 +37,8 @@ class PaperSearchForm(Form):
     select = SelectField('Sort_Method:', choices=choices)
     search = StringField('Keywords')
     number = StringField('Query_Paper_numbers')
+
+class Reaction(Form):
+    likes = StringField('You like this Paper?')
+    comments = StringField('Please have your comments to this paper')
+    paper_title = StringField('Paper title')

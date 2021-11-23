@@ -2,6 +2,9 @@ import json
 import urllib.request
 import datetime
 import pymongo
+import pandas as pd
+from json import dumps
+from io import StringIO
 
 client = pymongo.MongoClient("mongodb+srv://coen6313:irank@coen6313irank.xbzvo.mongodb.net/"
                              "myFirstDatabase?retryWrites=true&w=majority")
@@ -78,7 +81,7 @@ def query_from_API(keywords, numbers):
 
         new_paper = {'title': s['data'][i]['title'], 'abstract': s['data'][i]['abstract'],
                      'venue': s['data'][i]['venue'], 'authors': author_list, 'year': s['data'][i]['year'],
-                     'n_citations': s['data'][i]['citationCount']}
+                     'n_citations': s['data'][i]['citationCount'],'url': s['data'][i]['url']}
 
         paper_found = paper_db.find_one({'title': s['data'][i]['title']})
         if not paper_found:
@@ -117,3 +120,14 @@ def reorder_bydate(paper_list):
 
 def reorder_byML(paper_list):
     return paper_list
+
+def clean_paperjson_toshow(paper_list):
+    paper_list_clean = []
+    for paper in paper_list:
+        paper = {key: val for key, val in paper.items() if key != '_id'}
+        paper = {key: val for key, val in paper.items() if key != 'create_time'}
+        paper_list_clean.append(paper)
+    json_data = dumps(paper_list)
+    df = pd.read_json(StringIO(json_data))
+    return df
+
