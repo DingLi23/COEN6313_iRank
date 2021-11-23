@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <title>AJAX Example</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='js/ajax_table_example.js') }}"></script>
+
+</head>
+<body>
+
+
+<h2> {{title}} </h2>
+<p><a href="{{ url_for('search_welcome') }}" rel="external nofollow" >New_Search</a></p>
+
+<!-- <div class="container">
+
+<form enctype="multipart/form-data" action='download' method="POST">
+    <div class="form-row mb-3">
+      <div class="input-group col-sm-8">
+          <div class="input-group-prepend">
+            <button type="button" id="ajax_data_load" class="btn btn-secondary fixed-button-size">Run</button>
+          </div>
+            <select name="user" class="custom-select fixed-button-size">
+                <option value="one">Option..</option>
+                <option value="one">One</option>
+                <option value="two">Two</option>
+            </select>
+      </div>
+    </div>
+</form> -->
+
+<table id="jds-example" class="table">
+    <thead>
+        <tr>
+            {% for col in data.columns %}
+            <th scope="col"> {{ col }}</th>
+                {% endfor %}
+            <th scope="col"> like or comment</th>
+            <!-- <th scope="col"> comment</th> -->
+        </tr>
+    </thead>
+    <tbody>
+            {% for key, value in data.iterrows() %}
+        <tr>
+            
+                {% for k in value %}
+            <td scope="row">{{ k }}</td>
+                {% endfor %}
+
+            <td scope="row"><p></p><a href="{{ url_for('reaction_paper', paper_title=value[0]) }}">like or comment</a></p>
+            
+            </td>
+        </tr>
+            {% endfor %}
+    </tbody>
+</table>
+
+
+
+</div>
+
+
+</body>
+</html>
