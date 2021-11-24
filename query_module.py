@@ -81,7 +81,7 @@ def query_from_API(keywords, numbers):
 
         new_paper = {'title': s['data'][i]['title'], 'abstract': s['data'][i]['abstract'],
                      'venue': s['data'][i]['venue'], 'authors': author_list, 'year': s['data'][i]['year'],
-                     'n_citations': s['data'][i]['citationCount'],'url': s['data'][i]['url']}
+                     'n_citations': s['data'][i]['citationCount'], 'url': s['data'][i]['url']}
 
         paper_found = paper_db.find_one({'title': s['data'][i]['title']})
         if not paper_found:
@@ -112,7 +112,6 @@ def reorder_bydate(paper_list):
     date_order = []
     for paper in paper_list:
         date_order.append(int(paper['year']))
-    print(date_order)
     date_order = sorted(range(len(date_order)), key=lambda k: date_order[k], reverse=True)
     paper_list = [paper_list[i] for i in date_order]
     return paper_list
@@ -120,6 +119,21 @@ def reorder_bydate(paper_list):
 
 def reorder_byML(paper_list):
     return paper_list
+
+
+def reorder_bytrend(paper_list):
+    trendy_order = []
+    year = []
+    citations = []
+    for paper in paper_list:
+        year.append(int(paper['year']))
+        citations.append(int(paper['n_citations']))
+    year = [(2022-i) for i in year]
+    trendy_order = [i / j for i, j in zip(citations, year)]
+    trendy_order = sorted(range(len(trendy_order)), key=lambda k: trendy_order[k], reverse=True)
+    paper_list = [paper_list[i] for i in trendy_order]
+    return paper_list
+
 
 def clean_paperjson_toshow(paper_list):
     paper_list_clean = []
@@ -130,4 +144,3 @@ def clean_paperjson_toshow(paper_list):
     json_data = dumps(paper_list)
     df = pd.read_json(StringIO(json_data))
     return df
-
