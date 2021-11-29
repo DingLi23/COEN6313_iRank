@@ -1,13 +1,15 @@
 import json
 from flask import Flask, jsonify, render_template, request, url_for, redirect, session
-from query_module import query_from_API, reorder_bydate, reorder_bycitations, clean_paperjson_toshow, reorder_bytrend
+from query_module import query_from_API, reorder_bydate, reorder_bycitations, clean_paperjson_toshow, reorder_bytrend, \
+    query_from_API_s2search
 import pymongo
-import bcrypt
+# import bcrypt
 from database_user import PaperSearchForm, Reaction
 from json import dumps
 import pandas as pd
 from io import StringIO
 from urllib.parse import urlparse, urljoin
+import urllib.request
 
 app = Flask(__name__)
 
@@ -39,6 +41,10 @@ def is_safe_url(target):
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
+
+# @app.route("/", methods=['post', 'get'])
+# def hello():
+#     redirect(url_for("index"))
 
 # assign URLs to have a particular route
 @app.route("/", methods=['post', 'get'])
@@ -81,7 +87,7 @@ def index():
             user_data = userinfo.find_one({"email": email})
             new_email = user_data['email']
             # if registered redirect to logged in as the registered user
-            return render_template('logged_in.html', email=new_email)
+            return render_template('logged_in_new.html', email=new_email)
     return render_template('index.html')
 
 
@@ -140,7 +146,7 @@ def search_welcome():
         search = PaperSearchForm(request.form)
         if request.method == 'POST':
             return search_results(search)
-        return render_template('logged_in.html', form=search, email=email)
+        return render_template('logged_in_new.html', form=search, email=email)
 
 
 @app.route('/search/results', methods=['GET', 'POST'])
@@ -164,8 +170,7 @@ def search_results(search):
     elif search.data['select'] == 'by_Trend':
         return redirect(url_for("query_result_req_bytrend", keyword=search_string, number=search_number))
     elif search.data['select'] == 'by_s2Model':
-        return
-        # return redirect(url_for("query_result_req_bycitations", keyword=search_string, number=search_number))
+        return redirect(url_for("query_result_req_bys2model", keyword=search_string, number=search_number))
 
 
 @app.route('/search/<string:keyword>&<string:number>', methods=['GET', 'POST'])
@@ -177,7 +182,7 @@ def query_result_req(keyword, number):
     """
     paper_list = query_from_API(keyword, number)
     df = clean_paperjson_toshow(paper_list)
-    return render_template('papermeta.html', data=df, title="Paper_Result")
+    return render_template('papermeta_new.html', data=df, title="Paper_Result")
 
 
 @app.route('/search/<string:keyword>&<string:number>/by_date', methods=['GET', 'POST'])
@@ -191,7 +196,7 @@ def query_result_req_bydate(keyword, number):
     paper_list = query_from_API(keyword, number)
     paper_list = reorder_bydate(paper_list)
     df = clean_paperjson_toshow(paper_list)
-    return render_template('papermeta.html', data=df, title="Paper_Result_by_date")
+    return render_template('papermeta_new.html', data=df, title="Paper_Result_by_date")
 
 
 @app.route('/search/<string:keyword>&<string:number>/by_citations', methods=['GET', 'POST'])
@@ -204,10 +209,13 @@ def query_result_req_bycitations(keyword, number):
     paper_list = query_from_API(keyword, number)
     paper_list = reorder_bycitations(paper_list)
     df = clean_paperjson_toshow(paper_list)
-    return render_template('papermeta.html', data=df, title="Paper_Result_by_citations")
+    return render_template('papermeta_new.html', data=df, title="Paper_Result_by_citations")
 
 
-@app.route('/search/<string:keyword>&<string:number>/by_bytrend', methods=['GET', 'POST'])
+88
+
+
+@app.route('/search/<string:keyword>&<string:number>/bytrend', methods=['GET', 'POST'])
 def query_result_req_bytrend(keyword, number):
     """
     :param keyword: keyword you wanna search like "cloud computing"
@@ -217,10 +225,22 @@ def query_result_req_bytrend(keyword, number):
     paper_list = query_from_API(keyword, number)
     paper_list = reorder_bytrend(paper_list)
     df = clean_paperjson_toshow(paper_list)
-    return render_template('papermeta.html', data=df, title="Paper_Result_by_trendy")
+    return render_template('papermeta_new.html', data=df, title="Paper_Result_by_trendy")
 
 
-#
+@app.route('/search/<string:keyword>&<string:number>/bys2search', methods=['GET', 'POST'])
+def query_result_req_bys2model(keyword, number):
+    """
+    :param keyword: keyword you wanna search like "cloud computing"
+    :param number: how many papers you wanna return based on S2search scores.
+    :return: Json list
+    """
+    paper_list = query_from_API_s2search(keyword, number)
+    # json_data = dumps(paper_list)
+    df = pd.DataFrame(paper_list)
+    return render_template('papermeta_new.html', data=df, title="Paper_Result_by_s2model")
+
+
 @app.route('/view/paper_history')
 def show_mangodb():
     papermeta = paper_db.find()
@@ -232,7 +252,7 @@ def show_mangodb():
         paper_list.append(paper)
     json_data = dumps(paper_list)
     df = pd.read_json(StringIO(json_data))
-    return render_template('papermeta.html', data=df, title="Paper_History")
+    return render_template('papermeta_new.html', data=df, title="Paper_History")
 
 
 @app.route('/reaction/<paper_title>/', methods=['GET', 'POST'])
@@ -254,7 +274,17 @@ def reaction_paper(paper_title):
             reaction_db.insert_one(record)
             return redirect_back('/reaction/<paper_title>/')
 
-    return render_template('reaction.html', form=reaction, email=email, paper_title=paper_title)
+    return render_template('reaction_new.html', form=reaction, email=email, paper_title=paper_title)
+
+
+@app.route('/view/<paper_id>/', methods=['GET', 'POST'])
+def view_url(paper_id):
+    query_url = 'https://api.semanticscholar.org/graph/v1/paper/' + paper_id + '?fields=url'
+    with urllib.request.urlopen(query_url) as url:
+        s = url.read()
+    s = json.loads(s)
+    redirect_url = s['url']
+    return redirect(redirect_url)
 
 
 if __name__ == '__main__':

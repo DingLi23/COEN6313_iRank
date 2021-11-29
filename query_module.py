@@ -70,8 +70,8 @@ def query_from_API(keywords, numbers):
 
     now_time = datetime.datetime.now()
     paper_dict_list = []
-    last_paper_id = paper_id_list[-1]
-    count = 0
+    # last_paper_id = paper_id_list[-1]
+    # count = 0
 
     for i in range(len(s['data'])):
         # paper_dict_format[i]['title'] = s['data'][i]['title']
@@ -81,17 +81,18 @@ def query_from_API(keywords, numbers):
 
         new_paper = {'title': s['data'][i]['title'], 'abstract': s['data'][i]['abstract'],
                      'venue': s['data'][i]['venue'], 'authors': author_list, 'year': s['data'][i]['year'],
-                     'n_citations': s['data'][i]['citationCount'], 'url': s['data'][i]['url']}
-
+                     'n_citations': s['data'][i]['citationCount'],
+                     'paper_id': s['data'][i]['paperId']}
+        # 'url': s['data'][i]['url'],
         paper_found = paper_db.find_one({'title': s['data'][i]['title']})
         if not paper_found:
-            count = count + 1
-            paper_details = {'paper_id': count + last_paper_id, 'create_time': now_time,
+            # count = count + 1
+            paper_details = {'paper_id': s['data'][i]['paperId'], 'create_time': now_time,
                              'title': s['data'][i]['title'], 'author': author_list,
                              'abstract': s['data'][i]['abstract'], 'venue': s['data'][i]['venue'],
                              'year': s['data'][i]['year'], 'citations': s['data'][i]['citationCount'],
                              'url': s['data'][i]['url']}
-            paper_id_list.append(count)
+            # paper_id_list.append(count)
             paper_db.insert_one(paper_details)
         paper_dict_list.append(new_paper)
         # json_rlt = json.dumps(paper_dict_list)
@@ -144,3 +145,33 @@ def clean_paperjson_toshow(paper_list):
     json_data = dumps(paper_list)
     df = pd.read_json(StringIO(json_data))
     return df
+
+def query_from_API_s2search(keyword, number):
+    query_url = 'http://127.0.0.1:5000/s2rank/' + keyword + '&' + number
+    # query_url = 'http://localhost:5000/s2rank/' + keyword + '&' + number
+    with urllib.request.urlopen(query_url) as url:
+        s = url.read()
+    s = json.loads(s)
+    paper_list = []
+    score = []
+    for paper in s:
+        paper_db.insert_one(paper)
+        paper_list.append(paper)
+        score.append(float(paper['Relevance Score by S2Search']))
+    score_order = sorted(range(len(score)), key=lambda k: score[k], reverse=True)
+    paper_list = [paper_list[i] for i in score_order]
+
+    paper_list_clean = []
+    for paper in paper_list:
+        paper = {key: val for key, val in paper.items() if key != '_id'}
+        paper = {key: val for key, val in paper.items() if key != 'abstract'}
+        paper = {key: val for key, val in paper.items() if key != 'url'}
+        paper_list_clean.append(paper)
+
+    return paper_list_clean
+
+
+# list,s = query_from_API("nlp", '2')
+# print(s)
+#
+
