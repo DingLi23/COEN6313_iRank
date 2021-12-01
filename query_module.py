@@ -118,10 +118,6 @@ def reorder_bydate(paper_list):
     return paper_list
 
 
-def reorder_byML(paper_list):
-    return paper_list
-
-
 def reorder_bytrend(paper_list):
     trendy_order = []
     year = []
@@ -129,7 +125,7 @@ def reorder_bytrend(paper_list):
     for paper in paper_list:
         year.append(int(paper['year']))
         citations.append(int(paper['n_citations']))
-    year = [(2022-i) for i in year]
+    year = [(2022 - i) for i in year]
     trendy_order = [i / j for i, j in zip(citations, year)]
     trendy_order = sorted(range(len(trendy_order)), key=lambda k: trendy_order[k], reverse=True)
     paper_list = [paper_list[i] for i in trendy_order]
@@ -146,9 +142,9 @@ def clean_paperjson_toshow(paper_list):
     df = pd.read_json(StringIO(json_data))
     return df
 
+
 def query_from_API_s2search(keyword, number):
     query_url = 'http://127.0.0.1:5001/s2rank/' + keyword + '&' + number
-    # query_url = 'http://localhost:5000/s2rank/' + keyword + '&' + number
     with urllib.request.urlopen(query_url) as url:
         s = url.read()
     s = json.loads(s)
@@ -170,8 +166,6 @@ def query_from_API_s2search(keyword, number):
 
     return paper_list_clean
 
-
 # list,s = query_from_API("nlp", '2')
 # print(s)
 #
-
