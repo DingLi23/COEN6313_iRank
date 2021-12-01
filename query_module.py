@@ -147,7 +147,7 @@ def clean_paperjson_toshow(paper_list):
     return df
 
 def query_from_API_s2search(keyword, number):
-    query_url = 'http://127.0.0.1:5000/s2rank/' + keyword + '&' + number
+    query_url = 'http://127.0.0.1:5001/s2rank/' + keyword + '&' + number
     # query_url = 'http://localhost:5000/s2rank/' + keyword + '&' + number
     with urllib.request.urlopen(query_url) as url:
         s = url.read()
